@@ -1,7 +1,7 @@
 name: Test Build Docker ECR Logic
 
 on:
-  workflow_dispatch: # Pozwala uruchomić ręcznie
+  workflow_dispatch: # Umożliwia ręczne uruchamianie
 
 jobs:
   test_logic:
@@ -14,13 +14,13 @@ jobs:
       - name: Wywołanie reusable workflow
         uses: ./.github/workflows/build-docker-ecr.yml
         with:
-          CHECKOUT_GIT_REF: "main"
-          AWS_ACCOUNT_ID: "123456789012"
+          CHECKOUT_GIT_REF: "main" # Testujemy na głównej gałęzi
+          AWS_ACCOUNT_ID: "123456789012" # Mockowe dane
           DEPLOYER_ROLE_NAME: "mock-role"
           AWS_REGION: "us-east-1"
-          ECR_REPOSITORY: "mock-repo"
+          ECR_REPOSITORY: "" # Pozostaw puste, jeśli nie chcesz pushować do ECR
           DOCKER_TAG_1: "mock-tag"
-          DOCKER_TAG_2: "optional-mock-tag"
+          DOCKER_TAG_2: "" # Opcjonalny mock tag
           RUNNER_LABEL_ARRAY_STRING: "[\"ubuntu-latest\"]"
-          BEFORE_BUILD_CMD: "echo 'Before build command executed!'"
+          BEFORE_BUILD_CMD: "echo 'Testujemy logikę builda!'"
           DOCKER_FILE_NAME: "Dockerfile"
