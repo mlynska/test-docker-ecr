@@ -3,6 +3,10 @@ name: Test Build Docker ECR Logic
 on:
   workflow_dispatch: # Pozwala uruchomić ręcznie
 
+permissions:
+  contents: write
+  id-token: write
+
 jobs:
   test_logic:
     name: Test Build Logic
@@ -15,5 +19,5 @@ jobs:
       ECR_REPOSITORY: "mock-repo"
       DOCKER_TAG_1: "mock-tag"
       DOCKER_TAG_2: "optional-mock-tag"
-      DOCKER_LATEST_TAG: "latest"
       RUNNER_LABEL_ARRAY_STRING: "[\"ubuntu-latest\"]"
+      DOCKER_LATEST_TAG: "latest"
