@@ -3,6 +3,26 @@ name: Build docker ECR
 on:
   workflow_call:
     inputs:
+      CHECKOUT_GIT_REF:
+        type: string
+        required: true
+        description: "Can be: commit hash, refs/tags/CUSTOM_TAG or BRANCH_NAME"
+      AWS_ACCOUNT_ID:
+        type: string
+        required: true
+        description: "AWS account id"
+      DEPLOYER_ROLE_NAME:
+        type: string
+        required: true
+        description: "AWS IAM deployer role in AWS account"
+      BEFORE_BUILD_CMD:
+        type: string
+        required: false
+        description: "Optional before build command to run"
+      AWS_REGION:
+        type: string
+        required: true
+        description: "AWS region"
       ECR_REPOSITORY:
         type: string
         required: false
@@ -11,22 +31,43 @@ on:
         type: string
         required: true
         description: "Name of docker image tag1 which will be pushed to ECR."
-    secrets:
-      AWS_SECRET_ACCESS_KEY:
+      DOCKER_TAG_2:
+        type: string
         required: false
-        description: "AWS secret access key for testing."
+        description: "(Optional) Name of docker image tag2 which will be pushed to ECR."
+      DOCKER_LATEST_TAG:
+        type: string
+        required: false
+        default: "latest"
+        description: "Name of default latest docker image which will be pushed to ECR."
+      RUNNER_LABEL_ARRAY_STRING:
+        type: string
+        required: true
+        description: "Runner labels array. E.g. [\"ubuntu-latest\"]"
+    secrets:
+      DOCKER_BUILD_ARGS_ENCRYPTED:
+        required: false
+        description: "Optional arguments to pass in to docker Command with secrets from Github."
 
 permissions:
   id-token: write
   contents: write
 
+env:
+  DEPLOYER_ROLE_ARN: arn:aws:iam::${{ inputs.AWS_ACCOUNT_ID }}:role/${{ inputs.DEPLOYER_ROLE_NAME }}
+  ECR_REGISTRY: ${{ inputs.AWS_ACCOUNT_ID }}.dkr.ecr.${{ inputs.AWS_REGION }}.amazonaws.com
+
 jobs:
   docker:
     name: Build & push docker
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(inputs.RUNNER_LABEL_ARRAY_STRING) }}
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          ref: ${{ inputs.CHECKOUT_GIT_REF }}
 
       - name: Simulate AWS Login
         run: echo "Simulating AWS login for testing."
@@ -34,10 +75,6 @@ jobs:
       - name: Simulate ECR Login
         if: ${{ inputs.ECR_REPOSITORY }}
         run: echo "Simulating ECR login for repository ${{ inputs.ECR_REPOSITORY }}."
-
-      - name: Skip Docker Push (No ECR_REPOSITORY)
-        if: ${{ inputs.ECR_REPOSITORY == '' }}
-        run: echo "Skipping docker push since ECR_REPOSITORY is not provided."
 
       - name: Remove slash from DOCKER_TAG_1 and trim to 128 characters
         id: tag_trim1
@@ -51,12 +88,12 @@ jobs:
         env:
           DOCKER_ARGS: "--no-cache"
         run: |
-          docker build -f Dockerfile -t local_image .
+          docker build -f Dockerfile -t local_image . $DOCKER_ARGS
         working-directory: .
 
-      - name: Docker image tag & push
+      - name: Simulate Docker Push
         if: ${{ inputs.ECR_REPOSITORY != '' }}
+        env:
+          ECR_IMAGE_URI_TAG_1: ${{ env.ECR_REGISTRY }}/${{ inputs.ECR_REPOSITORY }}:${{ env.DOCKER_TAG_1_TRIMMED }}
         run: |
-          echo "Tagging and pushing docker image for ${{ inputs.ECR_REPOSITORY }}."
-          docker tag local_image ${{ inputs.ECR_REPOSITORY }}:${{ env.DOCKER_TAG_1_TRIMMED }}
-          docker push ${{ inputs.ECR_REPOSITORY }}:${{ env.DOCKER_TAG_1_TRIMMED }}
+          echo "Simulating docker push for $ECR_IMAGE_URI_TAG_1."
