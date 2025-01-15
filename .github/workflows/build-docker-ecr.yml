@@ -1,4 +1,5 @@
-name: Build docker ECR
+name: Build Docker ECR
+
 on:
   workflow_call:
     outputs:
@@ -77,11 +78,11 @@ on:
       DOCKER_BUILD_ARGS_ENCRYPTED:
         required: false
         description: "Optional arguments to pass in to docker Command with secrets from Github."
-  workflow_dispatch: # Dodana możliwość ręcznego uruchamiania workflow
+  workflow_dispatch: # Enable manual triggering
 
 permissions:
   id-token: write
-  contents: write    # This is required for actions/checkout@v1
+  contents: write # Required for actions/checkout
 
 env:
   DEPLOYER_ROLE_ARN: arn:aws:iam::${{ inputs.AWS_ACCOUNT_ID }}:role/${{ inputs.DEPLOYER_ROLE_NAME }}
@@ -89,7 +90,7 @@ env:
 
 jobs:
   docker:
-    name: Build & push docker
+    name: Build & Push Docker
     runs-on: ubuntu-latest
     environment: ${{ inputs.JOB_GITHUB_ENVIRONMENT }}
     outputs:
@@ -98,8 +99,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          repository: ${{ inputs.REPOSITORY }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ inputs.CHECKOUT_GIT_REF }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -114,18 +114,16 @@ jobs:
         run: unzip -o ${{ inputs.GITHUB_INPUT_ARTIFACT_ZIP_FILE_NAME }}
 
       - name: Login to AWS
-        if: false  # Disabled for local testing
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ env.DEPLOYER_ROLE_ARN }}
           aws-region: ${{ inputs.AWS_REGION }}
 
       - name: Login to Amazon ECR
-        if: false  # Disabled for local testing
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Before build
-        if: inputs.BEFORE_BUILD_CMD != ''
+        if: ${{ inputs.BEFORE_BUILD_CMD != '' }}
         run: ${{ inputs.BEFORE_BUILD_CMD }}
 
       - name: Remove slash from DOCKER_TAG_1 and trim to 128 characters
@@ -133,7 +131,6 @@ jobs:
         run: |
           DOCKER_TAG_1_NO_SLASH=$(echo "${{ inputs.DOCKER_TAG_1 }}" | sed 's#/#-#g')
           DOCKER_TAG_1_TRIMMED="${DOCKER_TAG_1_NO_SLASH:0:127}"
-          echo $DOCKER_TAG_1_TRIMMED
           echo "DOCKER_TAG_1_TRIMMED=${DOCKER_TAG_1_TRIMMED}" >> $GITHUB_ENV
 
       - name: Remove slash from DOCKER_TAG_2 and trim to 128 characters
@@ -157,6 +154,20 @@ jobs:
         working-directory: ${{ inputs.SUB_DIR }}
 
       - name: Docker image tag & push to ECR (DOCKER_TAG_1 & latest)
-        if: ${{ inputs.ECR_REPOSITORY != '' }}  # Warunek dla repozytorium ECR
+        if: ${{ inputs.ECR_REPOSITORY != '' }}
         env:
-          ECR_IMAGE_URI_TAG_1: ${{ env.ECR_REGISTRY
+          ECR_IMAGE_URI_TAG_1: ${{ env.ECR_REGISTRY }}/${{ inputs.ECR_REPOSITORY }}:${{ env.DOCKER_TAG_1_TRIMMED }}
+          ECR_IMAGE_URI_TAG_LATEST: ${{ env.ECR_REGISTRY }}/${{ inputs.ECR_REPOSITORY }}:${{ inputs.DOCKER_LATEST_TAG }}
+        run: |
+          docker tag $ECR_IMAGE_URI_TAG_1 $ECR_IMAGE_URI_TAG_LATEST
+          docker push $ECR_IMAGE_URI_TAG_1
+          docker push $ECR_IMAGE_URI_TAG_LATEST
+
+      - name: Docker image tag & push to ECR (DOCKER_TAG_2)
+        if: ${{ inputs.ECR_REPOSITORY != '' && inputs.DOCKER_TAG_2 != '' }}
+        env:
+          ECR_IMAGE_URI_TAG_1: ${{ env.ECR_REGISTRY }}/${{ inputs.ECR_REPOSITORY }}:${{ env.DOCKER_TAG_1_TRIMMED }}
+          ECR_IMAGE_URI_TAG_2: ${{ env.ECR_REGISTRY }}/${{ inputs.ECR_REPOSITORY }}:${{ env.DOCKER_TAG_2_TRIMMED }}
+        run: |
+          docker tag $ECR_IMAGE_URI_TAG_1 $ECR_IMAGE_URI_TAG_2
+          docker push $ECR_IMAGE_URI_TAG_2
