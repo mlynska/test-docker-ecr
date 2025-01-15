@@ -1,14 +1,31 @@
 name: Build docker ECR
 
 on:
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      ECR_REPOSITORY:
+        type: string
+        required: false
+        description: "Name of ECR repository where docker image will be pushed."
+      DOCKER_TAG_1:
+        type: string
+        required: true
+        description: "Name of docker image tag1 which will be pushed to ECR."
+    secrets:
+      AWS_SECRET_ACCESS_KEY:
+        required: false
+        description: "AWS secret access key for testing."
+
+permissions:
+  id-token: write
+  contents: write
 
 jobs:
   docker:
     name: Build & push docker
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Simulate AWS Login
@@ -17,6 +34,10 @@ jobs:
       - name: Simulate ECR Login
         if: ${{ inputs.ECR_REPOSITORY }}
         run: echo "Simulating ECR login for repository ${{ inputs.ECR_REPOSITORY }}."
+
+      - name: Skip Docker Push (No ECR_REPOSITORY)
+        if: ${{ inputs.ECR_REPOSITORY == '' }}
+        run: echo "Skipping docker push since ECR_REPOSITORY is not provided."
 
       - name: Remove slash from DOCKER_TAG_1 and trim to 128 characters
         id: tag_trim1
@@ -33,7 +54,9 @@ jobs:
           docker build -f Dockerfile -t local_image .
         working-directory: .
 
-      - name: Simulate Docker Push
+      - name: Docker image tag & push
         if: ${{ inputs.ECR_REPOSITORY != '' }}
         run: |
-          echo "Simulating docker push for ${{ inputs.ECR_REPOSITORY }}."
+          echo "Tagging and pushing docker image for ${{ inputs.ECR_REPOSITORY }}."
+          docker tag local_image ${{ inputs.ECR_REPOSITORY }}:${{ env.DOCKER_TAG_1_TRIMMED }}
+          docker push ${{ inputs.ECR_REPOSITORY }}:${{ env.DOCKER_TAG_1_TRIMMED }}
