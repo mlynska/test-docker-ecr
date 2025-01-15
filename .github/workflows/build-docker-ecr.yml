@@ -1,4 +1,4 @@
-name: Build Docker ECR
+name: Build docker ECR
 
 on:
   workflow_call:
@@ -20,9 +20,9 @@ on:
         type: string
         description: "AWS IAM deployer role in AWS account"
       BEFORE_BUILD_CMD:
-        required: false
-        type: string
-        description: "Optional before build command to run"
+          required: false
+          type: string
+          description: "Optional before build command to run"
       AWS_REGION:
         required: true
         type: string
@@ -33,7 +33,7 @@ on:
         description: "Name of ECR repository where docker image will be pushed."
       DOCKER_TAG_1:
         type: string
-        required: false
+        required: true
         description: "Name of docker image tag1 which will be pushed to ECR."
       DOCKER_TAG_2:
         type: string
@@ -78,11 +78,10 @@ on:
       DOCKER_BUILD_ARGS_ENCRYPTED:
         required: false
         description: "Optional arguments to pass in to docker Command with secrets from Github."
-  workflow_dispatch: # Enable manual triggering
 
 permissions:
   id-token: write
-  contents: write # Required for actions/checkout
+  contents: write    # This is required for actions/checkout@v1
 
 env:
   DEPLOYER_ROLE_ARN: arn:aws:iam::${{ inputs.AWS_ACCOUNT_ID }}:role/${{ inputs.DEPLOYER_ROLE_NAME }}
@@ -90,18 +89,18 @@ env:
 
 jobs:
   docker:
-    name: Build & Push Docker
-    runs-on: ubuntu-latest
+    name: Build & push docker
+    runs-on: ${{ fromJSON(inputs.RUNNER_LABEL_ARRAY_STRING) }}
     environment: ${{ inputs.JOB_GITHUB_ENVIRONMENT }}
     outputs:
       trimmed_docker_tag_1: ${{ env.DOCKER_TAG_1_TRIMMED }}
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.CHECKOUT_GIT_REF }}
-          fetch-depth: 0
           persist-credentials: false
+          fetch-depth: 0
+          ref: ${{ inputs.CHECKOUT_GIT_REF }}
 
       - name: Download input artifact
         if: ${{ inputs.GITHUB_INPUT_ARTIFACT_NAME }}
@@ -120,37 +119,27 @@ jobs:
           aws-region: ${{ inputs.AWS_REGION }}
 
       - name: Login to Amazon ECR
+        if: ${{ inputs.ECR_REPOSITORY }}
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Before build
-        if: ${{ inputs.BEFORE_BUILD_CMD != '' }}
+        if: inputs.BEFORE_BUILD_CMD != ''
         run: ${{ inputs.BEFORE_BUILD_CMD }}
 
       - name: Remove slash from DOCKER_TAG_1 and trim to 128 characters
         id: tag_trim1
         run: |
-          DOCKER_TAG_1_NO_SLASH=$(echo "${{ inputs.DOCKER_TAG_1 }}" | sed 's#/#-#g')
+          DOCKER_TAG_1_NO_SLASH=$(echo ${{ inputs.DOCKER_TAG_1 }} | sed 's#/#-#g')
           DOCKER_TAG_1_TRIMMED="${DOCKER_TAG_1_NO_SLASH:0:127}"
+          echo $DOCKER_TAG_1_TRIMMED
           echo "DOCKER_TAG_1_TRIMMED=${DOCKER_TAG_1_TRIMMED}" >> $GITHUB_ENV
-
-      - name: Remove slash from DOCKER_TAG_2 and trim to 128 characters
-        id: tag_trim2
-        if: ${{ inputs.DOCKER_TAG_2 }}
-        run: |
-          DOCKER_TAG_2_NO_SLASH=$(echo "${{ inputs.DOCKER_TAG_2 }}" | sed 's#/#-#g')
-          DOCKER_TAG_2_TRIMMED="${DOCKER_TAG_2_NO_SLASH:0:127}"
-          echo "DOCKER_TAG_2_TRIMMED=${DOCKER_TAG_2_TRIMMED}" >> $GITHUB_ENV
 
       - name: Docker image build
         id: docker_build
         env:
           DOCKER_ARGS: ${{ inputs.DOCKER_BUILD_ARGS }} ${{ secrets.DOCKER_BUILD_ARGS_ENCRYPTED }}
         run: |
-          if [ "${{ inputs.ECR_REPOSITORY }}" != "" ]; then
-            docker build -f ${{ inputs.DOCKER_FILE_NAME }} -t ${{ env.ECR_REGISTRY }}/${{ inputs.ECR_REPOSITORY }}:${{ env.DOCKER_TAG_1_TRIMMED }} . $DOCKER_ARGS
-          else
-            docker build -f ${{ inputs.DOCKER_FILE_NAME }} -t local_image . $DOCKER_ARGS
-          fi
+          docker build -f ${{ inputs.DOCKER_FILE_NAME }} -t local_image . $DOCKER_ARGS
         working-directory: ${{ inputs.SUB_DIR }}
 
       - name: Docker image tag & push to ECR (DOCKER_TAG_1 & latest)
@@ -171,3 +160,4 @@ jobs:
         run: |
           docker tag $ECR_IMAGE_URI_TAG_1 $ECR_IMAGE_URI_TAG_2
           docker push $ECR_IMAGE_URI_TAG_2
+        working-directory: ${{ inputs.SUB_DIR }}
