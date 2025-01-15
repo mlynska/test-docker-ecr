@@ -77,6 +77,7 @@ on:
       DOCKER_BUILD_ARGS_ENCRYPTED:
         required: false
         description: "Optional arguments to pass in to docker Command with secrets from Github."
+  workflow_dispatch: # Dodana możliwość ręcznego uruchamiania workflow
 
 permissions:
   id-token: write
@@ -97,10 +98,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          repository: ${{ inputs.REPOSITORY }}
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
           persist-credentials: false
-          ref: ${{ inputs.CHECKOUT_GIT_REF }}
 
       - name: Download input artifact
         if: ${{ inputs.GITHUB_INPUT_ARTIFACT_NAME }}
@@ -112,11 +113,16 @@ jobs:
         if: ${{ inputs.GITHUB_INPUT_ARTIFACT_NAME }}
         run: unzip -o ${{ inputs.GITHUB_INPUT_ARTIFACT_ZIP_FILE_NAME }}
 
-      - name: Simulacja logowania do AWS
-        run: echo "Symulacja logowania do AWS"
+      - name: Login to AWS
+        if: false  # Disabled for local testing
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.DEPLOYER_ROLE_ARN }}
+          aws-region: ${{ inputs.AWS_REGION }}
 
-      - name: Simulacja logowania do ECR
-        run: echo "Symulacja logowania do ECR"
+      - name: Login to Amazon ECR
+        if: false  # Disabled for local testing
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Before build
         if: inputs.BEFORE_BUILD_CMD != ''
@@ -127,6 +133,7 @@ jobs:
         run: |
           DOCKER_TAG_1_NO_SLASH=$(echo "${{ inputs.DOCKER_TAG_1 }}" | sed 's#/#-#g')
           DOCKER_TAG_1_TRIMMED="${DOCKER_TAG_1_NO_SLASH:0:127}"
+          echo $DOCKER_TAG_1_TRIMMED
           echo "DOCKER_TAG_1_TRIMMED=${DOCKER_TAG_1_TRIMMED}" >> $GITHUB_ENV
 
       - name: Remove slash from DOCKER_TAG_2 and trim to 128 characters
@@ -137,20 +144,19 @@ jobs:
           DOCKER_TAG_2_TRIMMED="${DOCKER_TAG_2_NO_SLASH:0:127}"
           echo "DOCKER_TAG_2_TRIMMED=${DOCKER_TAG_2_TRIMMED}" >> $GITHUB_ENV
 
-      - name: Simulacja budowania Dockera
+      - name: Docker image build
         id: docker_build
+        env:
+          DOCKER_ARGS: ${{ inputs.DOCKER_BUILD_ARGS }} ${{ secrets.DOCKER_BUILD_ARGS_ENCRYPTED }}
         run: |
-          echo "docker build -f ${{ inputs.DOCKER_FILE_NAME }} ."
+          if [ "${{ inputs.ECR_REPOSITORY }}" != "" ]; then
+            docker build -f ${{ inputs.DOCKER_FILE_NAME }} -t ${{ env.ECR_REGISTRY }}/${{ inputs.ECR_REPOSITORY }}:${{ env.DOCKER_TAG_1_TRIMMED }} . $DOCKER_ARGS
+          else
+            docker build -f ${{ inputs.DOCKER_FILE_NAME }} -t local_image . $DOCKER_ARGS
+          fi
+        working-directory: ${{ inputs.SUB_DIR }}
 
-      - name: Symulacja tagowania i wysyłania DOCKER_TAG_1 & latest
-        if: ${{ inputs.ECR_REPOSITORY != '' }}
-        run: |
-          echo "docker tag ${ECR_IMAGE_URI_TAG_1} ${ECR_IMAGE_URI_TAG_LATEST}"
-          echo "docker push ${ECR_IMAGE_URI_TAG_1}"
-          echo "docker push ${ECR_IMAGE_URI_TAG_LATEST}"
-
-      - name: Symulacja tagowania i wysyłania DOCKER_TAG_2
-        if: ${{ inputs.ECR_REPOSITORY != '' && inputs.DOCKER_TAG_2 != '' }}
-        run: |
-          echo "docker tag ${ECR_IMAGE_URI_TAG_1} ${ECR_IMAGE_URI_TAG_2}"
-          echo "docker push ${ECR_IMAGE_URI_TAG_2}"
+      - name: Docker image tag & push to ECR (DOCKER_TAG_1 & latest)
+        if: ${{ inputs.ECR_REPOSITORY != '' }}  # Warunek dla repozytorium ECR
+        env:
+          ECR_IMAGE_URI_TAG_1: ${{ env.ECR_REGISTRY
