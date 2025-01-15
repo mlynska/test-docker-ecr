@@ -1,163 +1,39 @@
 name: Build docker ECR
 
 on:
-  workflow_call:
-    outputs:
-      trimmed_docker_tag:
-        description: "Trimmed docker tag"
-        value: ${{ jobs.docker.outputs.trimmed_docker_tag_1 }}
-    inputs:
-      CHECKOUT_GIT_REF:
-        required: true
-        type: string
-        description: "Can be: commit hash, refs/tags/CUSTOM_TAG or BRANCH_NAME"
-      AWS_ACCOUNT_ID:
-        required: true
-        type: string
-        description: "AWS account id"
-      DEPLOYER_ROLE_NAME:
-        required: true
-        type: string
-        description: "AWS IAM deployer role in AWS account"
-      BEFORE_BUILD_CMD:
-          required: false
-          type: string
-          description: "Optional before build command to run"
-      AWS_REGION:
-        required: true
-        type: string
-        description: "AWS region"
-      ECR_REPOSITORY:
-        type: string
-        required: false
-        description: "Name of ECR repository where docker image will be pushed."
-      DOCKER_TAG_1:
-        type: string
-        required: true
-        description: "Name of docker image tag1 which will be pushed to ECR."
-      DOCKER_TAG_2:
-        type: string
-        required: false
-        description: "(Optional) Name of docker image tag2 which will be pushed to ECR."
-      DOCKER_LATEST_TAG:
-        type: string
-        required: false
-        default: 'latest'
-        description: "Name of default latest docker image which will be pushed to ECR. Default: latest"
-      DOCKER_FILE_NAME:
-        type: string
-        required: false
-        default: 'Dockerfile'
-        description: "Name of Docker file. E.g. CustomDockerfile. Can be used with inputs.SUB_DIR. Default: Dockerfile"
-      GITHUB_INPUT_ARTIFACT_NAME:
-        type: string
-        required: false
-        description: "(Optional) Name of input GitHub Artifact containing zip file with files required for docker build."
-      GITHUB_INPUT_ARTIFACT_ZIP_FILE_NAME:
-        type: string
-        required: false
-        description: "(Optional) Name of zip file inside input GitHub Artifact containing files required for docker build."
-      JOB_GITHUB_ENVIRONMENT:
-        type: string
-        required: false
-        description: "Optional name of github environment. When set, approval will be required."
-      RUNNER_LABEL_ARRAY_STRING:
-        type: string
-        required: true
-        description: "Runner labels array. e.g.[\"ubuntu-latest\"]"
-      DOCKER_BUILD_ARGS:
-        type: string
-        required: false
-        description: "Optional arguments to pass in to docker Command"
-      SUB_DIR:
-        type: string
-        required: false
-        default: "."
-        description: "(Optional) Working directory for docker build command. Default: '.'"
-    secrets:
-      DOCKER_BUILD_ARGS_ENCRYPTED:
-        required: false
-        description: "Optional arguments to pass in to docker Command with secrets from Github."
-
-permissions:
-  id-token: write
-  contents: write    # This is required for actions/checkout@v1
-
-env:
-  DEPLOYER_ROLE_ARN: arn:aws:iam::${{ inputs.AWS_ACCOUNT_ID }}:role/${{ inputs.DEPLOYER_ROLE_NAME }}
-  ECR_REGISTRY: ${{ inputs.AWS_ACCOUNT_ID }}.dkr.ecr.${{ inputs.AWS_REGION }}.amazonaws.com
+  workflow_dispatch:
 
 jobs:
   docker:
     name: Build & push docker
-    runs-on: ${{ fromJSON(inputs.RUNNER_LABEL_ARRAY_STRING) }}
-    environment: ${{ inputs.JOB_GITHUB_ENVIRONMENT }}
-    outputs:
-      trimmed_docker_tag_1: ${{ env.DOCKER_TAG_1_TRIMMED }}
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-          ref: ${{ inputs.CHECKOUT_GIT_REF }}
 
-      - name: Download input artifact
-        if: ${{ inputs.GITHUB_INPUT_ARTIFACT_NAME }}
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ inputs.GITHUB_INPUT_ARTIFACT_NAME }}
+      - name: Simulate AWS Login
+        run: echo "Simulating AWS login for testing."
 
-      - name: Unzip GitHub Artifact file
-        if: ${{ inputs.GITHUB_INPUT_ARTIFACT_NAME }}
-        run: unzip -o ${{ inputs.GITHUB_INPUT_ARTIFACT_ZIP_FILE_NAME }}
-
-      - name: Login to AWS
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ env.DEPLOYER_ROLE_ARN }}
-          aws-region: ${{ inputs.AWS_REGION }}
-
-      - name: Login to Amazon ECR
+      - name: Simulate ECR Login
         if: ${{ inputs.ECR_REPOSITORY }}
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Before build
-        if: inputs.BEFORE_BUILD_CMD != ''
-        run: ${{ inputs.BEFORE_BUILD_CMD }}
+        run: echo "Simulating ECR login for repository ${{ inputs.ECR_REPOSITORY }}."
 
       - name: Remove slash from DOCKER_TAG_1 and trim to 128 characters
         id: tag_trim1
         run: |
           DOCKER_TAG_1_NO_SLASH=$(echo ${{ inputs.DOCKER_TAG_1 }} | sed 's#/#-#g')
           DOCKER_TAG_1_TRIMMED="${DOCKER_TAG_1_NO_SLASH:0:127}"
-          echo $DOCKER_TAG_1_TRIMMED
           echo "DOCKER_TAG_1_TRIMMED=${DOCKER_TAG_1_TRIMMED}" >> $GITHUB_ENV
 
       - name: Docker image build
         id: docker_build
         env:
-          DOCKER_ARGS: ${{ inputs.DOCKER_BUILD_ARGS }} ${{ secrets.DOCKER_BUILD_ARGS_ENCRYPTED }}
+          DOCKER_ARGS: "--no-cache"
         run: |
-          docker build -f ${{ inputs.DOCKER_FILE_NAME }} -t local_image . $DOCKER_ARGS
-        working-directory: ${{ inputs.SUB_DIR }}
+          docker build -f Dockerfile -t local_image .
+        working-directory: .
 
-      - name: Docker image tag & push to ECR (DOCKER_TAG_1 & latest)
+      - name: Simulate Docker Push
         if: ${{ inputs.ECR_REPOSITORY != '' }}
-        env:
-          ECR_IMAGE_URI_TAG_1: ${{ env.ECR_REGISTRY }}/${{ inputs.ECR_REPOSITORY }}:${{ env.DOCKER_TAG_1_TRIMMED }}
-          ECR_IMAGE_URI_TAG_LATEST: ${{ env.ECR_REGISTRY }}/${{ inputs.ECR_REPOSITORY }}:${{ inputs.DOCKER_LATEST_TAG }}
         run: |
-          docker tag $ECR_IMAGE_URI_TAG_1 $ECR_IMAGE_URI_TAG_LATEST
-          docker push $ECR_IMAGE_URI_TAG_1
-          docker push $ECR_IMAGE_URI_TAG_LATEST
-
-      - name: Docker image tag & push to ECR (DOCKER_TAG_2)
-        if: ${{ inputs.ECR_REPOSITORY != '' && inputs.DOCKER_TAG_2 != '' }}
-        env:
-          ECR_IMAGE_URI_TAG_1: ${{ env.ECR_REGISTRY }}/${{ inputs.ECR_REPOSITORY }}:${{ env.DOCKER_TAG_1_TRIMMED }}
-          ECR_IMAGE_URI_TAG_2: ${{ env.ECR_REGISTRY }}/${{ inputs.ECR_REPOSITORY }}:${{ env.DOCKER_TAG_2_TRIMMED }}
-        run: |
-          docker tag $ECR_IMAGE_URI_TAG_1 $ECR_IMAGE_URI_TAG_2
-          docker push $ECR_IMAGE_URI_TAG_2
-        working-directory: ${{ inputs.SUB_DIR }}
+          echo "Simulating docker push for ${{ inputs.ECR_REPOSITORY }}."
