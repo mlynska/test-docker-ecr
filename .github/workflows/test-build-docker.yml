@@ -12,12 +12,10 @@ jobs:
     name: Test Build Logic
     uses: ./.github/workflows/build-docker-ecr.yml
     with:
-      CHECKOUT_GIT_REF: "main" # Testujemy na głównej gałęzi
-      AWS_ACCOUNT_ID: "123456789012" # Mockowe dane
+      CHECKOUT_GIT_REF: "main"
+      AWS_ACCOUNT_ID: "123456789012"
       DEPLOYER_ROLE_NAME: "mock-role"
       AWS_REGION: "us-east-1"
       ECR_REPOSITORY: "mock-repo"
       DOCKER_TAG_1: "mock-tag"
-      DOCKER_TAG_2: "optional-mock-tag"
       RUNNER_LABEL_ARRAY_STRING: "[\"ubuntu-latest\"]"
-      DOCKER_LATEST_TAG: "latest"
