@@ -6,13 +6,16 @@ on:
 jobs:
   test_logic:
     name: Test Build Logic
-    runs-on: ubuntu-latest # Wymagane do uruchomienia kroku
+    runs-on: ubuntu-latest
     steps:
-      - name: Wywołaj reusable workflow
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Wywołanie reusable workflow
         uses: ./.github/workflows/build-docker-ecr.yml
         with:
-          CHECKOUT_GIT_REF: "main" # Testujemy na głównej gałęzi
-          AWS_ACCOUNT_ID: "123456789012" # Mockowe dane
+          CHECKOUT_GIT_REF: "main"
+          AWS_ACCOUNT_ID: "123456789012"
           DEPLOYER_ROLE_NAME: "mock-role"
           AWS_REGION: "us-east-1"
           ECR_REPOSITORY: "mock-repo"
