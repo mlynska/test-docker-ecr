@@ -17,7 +17,7 @@ jobs:
       DEPLOYER_ROLE_NAME: "mock-role"
       AWS_REGION: "us-east-1"
       ECR_REPOSITORY: "my-repo"
-      DOCKER_TAG_1: "a-very-long-tag-that-exceeds-128-characters-abcdefghijklmnopqrstuvwxyz-1234567890-ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+      DOCKER_TAG_1: "acveryxlongxtagxthatxexceedx128xcharactersxabcdefghijklmnopqrstuvwxyzx1234567890xABCDEFGHIJKLMNOPQRSTUVWXYZ"
       DOCKER_TAG_2: ""
       RUNNER_LABEL_ARRAY_STRING: '["ubuntu-latest"]'
     secrets:
