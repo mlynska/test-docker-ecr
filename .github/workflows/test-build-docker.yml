@@ -18,7 +18,7 @@ jobs:
       AWS_REGION: "us-east-1"
       ECR_REPOSITORY: ""
       DOCKER_TAG_1: "mock-tag"
-      DOCKEER_TAG_2: ""
+      DOCKEER_TAG_2: " "
       RUNNER_LABEL_ARRAY_STRING: '["ubuntu-latest"]'
     secrets:
       DOCKER_BUILD_ARGS_ENCRYPTED: "mock-encrypted-args"
