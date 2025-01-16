@@ -1,5 +1,4 @@
-name: Build docker ECR
-
+name: Build docker ECR (Test Version)
 on:
   workflow_call:
     inputs:
@@ -59,7 +58,7 @@ env:
 
 jobs:
   docker:
-    name: Build & push docker
+    name: Build & push docker (Test Version)
     runs-on: ${{ fromJSON(inputs.RUNNER_LABEL_ARRAY_STRING) }}
     steps:
       - name: Checkout
@@ -70,11 +69,16 @@ jobs:
           ref: ${{ inputs.CHECKOUT_GIT_REF }}
 
       - name: Simulate AWS Login
+        if: ${{ inputs.ECR_REPOSITORY }}  # <--- Warunek dodany
         run: echo "Simulating AWS login for testing."
 
       - name: Simulate ECR Login
-        if: ${{ inputs.ECR_REPOSITORY }}
+        if: ${{ inputs.ECR_REPOSITORY }}  # <--- Warunek dodany
         run: echo "Simulating ECR login for repository ${{ inputs.ECR_REPOSITORY }}."
+
+      - name: Before build (simulated)
+        if: inputs.BEFORE_BUILD_CMD != ''  # <--- Warunek dodany
+        run: echo "Simulating before build command: ${{ inputs.BEFORE_BUILD_CMD }}"
 
       - name: Remove slash from DOCKER_TAG_1 and trim to 128 characters
         id: tag_trim1
@@ -83,17 +87,35 @@ jobs:
           DOCKER_TAG_1_TRIMMED="${DOCKER_TAG_1_NO_SLASH:0:127}"
           echo "DOCKER_TAG_1_TRIMMED=${DOCKER_TAG_1_TRIMMED}" >> $GITHUB_ENV
 
-      - name: Docker image build
-        id: docker_build
-        env:
-          DOCKER_ARGS: "--no-cache"
+      - name: Remove slash from DOCKER_TAG_2 and trim to 128 characters
+        id: tag_trim2
+        if: ${{ inputs.DOCKER_TAG_2 }}  # <--- Warunek dodany
         run: |
-          docker build -f Dockerfile -t local_image . $DOCKER_ARGS
+          DOCKER_TAG_2_NO_SLASH=$(echo ${{ inputs.DOCKER_TAG_2 }} | sed 's#/#-#g')
+          DOCKER_TAG_2_TRIMMED="${DOCKER_TAG_2_NO_SLASH:0:127}"
+          echo "DOCKER_TAG_2_TRIMMED=${DOCKER_TAG_2_TRIMMED}" >> $GITHUB_ENV
+
+      - name: Simulate Docker image build (always)
+        env:
+          DOCKER_ARGS: ${{ inputs.DOCKER_BUILD_ARGS }} ${{ secrets.DOCKER_BUILD_ARGS_ENCRYPTED }}
+        run: |
+          echo "Simulating docker build with args: $DOCKER_ARGS"
+          echo "Building image with tag: local_image"
         working-directory: .
 
-      - name: Simulate Docker Push
-        if: ${{ inputs.ECR_REPOSITORY != '' }}
+      - name: Simulate Docker image tag & push to ECR (DOCKER_TAG_1 & latest)
+        if: ${{ inputs.ECR_REPOSITORY }}  # <--- Warunek dodany
         env:
           ECR_IMAGE_URI_TAG_1: ${{ env.ECR_REGISTRY }}/${{ inputs.ECR_REPOSITORY }}:${{ env.DOCKER_TAG_1_TRIMMED }}
+          ECR_IMAGE_URI_TAG_LATEST: ${{ env.ECR_REGISTRY }}/${{ inputs.ECR_REPOSITORY }}:${{ inputs.DOCKER_LATEST_TAG }}
         run: |
-          echo "Simulating docker push for $ECR_IMAGE_URI_TAG_1."
+          echo "Simulating docker tag for $ECR_IMAGE_URI_TAG_1 and $ECR_IMAGE_URI_TAG_LATEST"
+          echo "Simulating docker push for $ECR_IMAGE_URI_TAG_1 and $ECR_IMAGE_URI_TAG_LATEST"
+
+      - name: Simulate Docker image tag & push to ECR (DOCKER_TAG_2)
+        if: ${{ inputs.ECR_REPOSITORY && inputs.DOCKER_TAG_2 }}  # <--- Warunek dodany
+        env:
+          ECR_IMAGE_URI_TAG_2: ${{ env.ECR_REGISTRY }}/${{ inputs.ECR_REPOSITORY }}:${{ env.DOCKER_TAG_2_TRIMMED }}
+        run: |
+          echo "Simulating docker tag for $ECR_IMAGE_URI_TAG_2"
+          echo "Simulating docker push for $ECR_IMAGE_URI_TAG_2"
