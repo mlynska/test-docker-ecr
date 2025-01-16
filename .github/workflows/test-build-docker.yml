@@ -1,7 +1,7 @@
-name: Test Build Docker ECR Logic
+name: Test Build Docker ECR Logic - No ECR_REPOSITORY
 
 on:
-  workflow_dispatch: # Pozwala uruchomić ręcznie
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -9,13 +9,12 @@ permissions:
 
 jobs:
   test_logic:
-    name: Test Build Logic
+    name: Test Build Logic - No ECR_REPOSITORY
     uses: ./.github/workflows/build-docker-ecr.yml
     with:
       CHECKOUT_GIT_REF: "main"
       AWS_ACCOUNT_ID: "123456789012"
       DEPLOYER_ROLE_NAME: "mock-role"
       AWS_REGION: "us-east-1"
-      ECR_REPOSITORY: "mock-repo"
       DOCKER_TAG_1: "mock-tag"
       RUNNER_LABEL_ARRAY_STRING: "[\"ubuntu-latest\"]"
