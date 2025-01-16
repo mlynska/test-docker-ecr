@@ -1,4 +1,4 @@
-name: Test Build Docker ECR Logic - With DOCKER_TAG_2
+name: Test Build Docker ECR Logic - With BEFORE_BUILD_CMD
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   test_logic:
-    name: Test Build Logic - With DOCKER_TAG_2
+    name: Test Build Logic - With BEFORE_BUILD_CMD
     uses: ./.github/workflows/build-docker-ecr.yml
     with:
       CHECKOUT_GIT_REF: "main"
@@ -18,5 +18,5 @@ jobs:
       AWS_REGION: "us-east-1"
       ECR_REPOSITORY: "mock-repo"
       DOCKER_TAG_1: "mock-tag"
-      DOCKER_TAG_2: "mock-tag-2"
+      BEFORE_BUILD_CMD: "echo 'Running before build command'"
       RUNNER_LABEL_ARRAY_STRING: "[\"ubuntu-latest\"]"
