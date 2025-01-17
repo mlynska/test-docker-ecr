@@ -1,4 +1,4 @@
-name: Test Build Docker ECR Logic - No BEFORE_BUILD_CMD
+name: Test Build Docker ECR Logic - No DOCKER_BUILD_ARGS_ENCRYPTED
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   test_logic:
-    name: Test Build Logic - No BEFORE_BUILD_CMD
+    name: Test Build Logic - No DOCKER_BUILD_ARGS_ENCRYPTED
     uses: ./.github/workflows/build-docker-ecr.yml
     with:
       CHECKOUT_GIT_REF: "main"
@@ -23,4 +23,4 @@ jobs:
       RUNNER_LABEL_ARRAY_STRING: '["ubuntu-latest"]'
       BEFORE_BUILD_CMD: ""  # Brak BEFORE_BUILD_CMD
     secrets:
-      DOCKER_BUILD_ARGS_ENCRYPTED: "mock-encrypted-args"
+      DOCKER_BUILD_ARGS_ENCRYPTED: ""  # Brak DOCKER_BUILD_ARGS_ENCRYPTED
