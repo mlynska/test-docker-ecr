@@ -1,4 +1,4 @@
-name: Test Build Docker ECR Logic - With DOCKER_BUILD_ARGS_ENCRYPTED
+name: Test Build Docker ECR Logic - No DOCKER_TAG_2
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   test_logic:
-    name: Test Build Logic - With DOCKER_BUILD_ARGS_ENCRYPTED
+    name: Test Build Logic - No DOCKER_TAG_2
     uses: ./.github/workflows/build-docker-ecr.yml
     with:
       CHECKOUT_GIT_REF: "main"
@@ -17,8 +17,8 @@ jobs:
       DEPLOYER_ROLE_NAME: "mock-role"
       AWS_REGION: "us-east-1"
       ECR_REPOSITORY: "my-repo"
-      DOCKER_TAG_1: "wacver/yxlongxtagxthatxexceedx128xyxlongxtagxthatxexceedx128xyxlongxtagxthatxexceedx128xyxlongxtagxthatxexceedx128xyxlongxtagxthatxexceedx128xcha/ractersxabcdefghijklmnopqrstuvwxyzx1234567890xABCDEFGHIJKLMNOPQRSTUVWXYZ"
-      DOCKER_TAG_2: ""
+      DOCKER_TAG_1: "v1.0.0"
+      DOCKER_TAG_2: ""  # Brak drugiego tagu
       RUNNER_LABEL_ARRAY_STRING: '["ubuntu-latest"]'
     secrets:
       DOCKER_BUILD_ARGS_ENCRYPTED: "mock-encrypted-args"
