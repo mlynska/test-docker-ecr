@@ -1,4 +1,4 @@
-name: Test Build Docker ECR Logic - No DOCKER_TAG_2
+name: Test Build Docker ECR Logic - No BEFORE_BUILD_CMD
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   test_logic:
-    name: Test Build Logic - No DOCKER_TAG_2
+    name: Test Build Logic - No BEFORE_BUILD_CMD
     uses: ./.github/workflows/build-docker-ecr.yml
     with:
       CHECKOUT_GIT_REF: "main"
@@ -19,6 +19,8 @@ jobs:
       ECR_REPOSITORY: "my-repo"
       DOCKER_TAG_1: "v1.0.0"
       DOCKER_TAG_2: ""  # Brak drugiego tagu
+      DOCKER_LATEST_TAG: "latest"
       RUNNER_LABEL_ARRAY_STRING: '["ubuntu-latest"]'
+      BEFORE_BUILD_CMD: ""  # Brak BEFORE_BUILD_CMD
     secrets:
       DOCKER_BUILD_ARGS_ENCRYPTED: "mock-encrypted-args"
