@@ -1,4 +1,4 @@
-name: Test Build Docker ECR Logic - No DOCKER_BUILD_ARGS_ENCRYPTED
+name: Test Build Docker ECR Logic - Different Runners
 
 on:
   workflow_dispatch:
@@ -8,8 +8,8 @@ permissions:
   id-token: write
 
 jobs:
-  test_logic:
-    name: Test Build Logic - No DOCKER_BUILD_ARGS_ENCRYPTED
+  test_logic_ubuntu:
+    name: Test Build Logic - Ubuntu Runner
     uses: ./.github/workflows/build-docker-ecr.yml
     with:
       CHECKOUT_GIT_REF: "main"
@@ -20,7 +20,38 @@ jobs:
       DOCKER_TAG_1: "v1.0.0"
       DOCKER_TAG_2: ""  # Brak drugiego tagu
       DOCKER_LATEST_TAG: "latest"
-      RUNNER_LABEL_ARRAY_STRING: '["ubuntu-latest"]'
-      BEFORE_BUILD_CMD: ""  # Brak BEFORE_BUILD_CMD
+      RUNNER_LABEL_ARRAY_STRING: '["ubuntu-latest"]'  # Ubuntu runner
+    secrets:
+      DOCKER_BUILD_ARGS_ENCRYPTED: ""  # Brak DOCKER_BUILD_ARGS_ENCRYPTED
+
+  test_logic_windows:
+    name: Test Build Logic - Windows Runner
+    uses: ./.github/workflows/build-docker-ecr.yml
+    with:
+      CHECKOUT_GIT_REF: "main"
+      AWS_ACCOUNT_ID: "123456789012"
+      DEPLOYER_ROLE_NAME: "mock-role"
+      AWS_REGION: "us-east-1"
+      ECR_REPOSITORY: "my-repo"
+      DOCKER_TAG_1: "v1.0.0"
+      DOCKER_TAG_2: ""  # Brak drugiego tagu
+      DOCKER_LATEST_TAG: "latest"
+      RUNNER_LABEL_ARRAY_STRING: '["windows-latest"]'  # Windows runner
+    secrets:
+      DOCKER_BUILD_ARGS_ENCRYPTED: ""  # Brak DOCKER_BUILD_ARGS_ENCRYPTED
+
+  test_logic_macos:
+    name: Test Build Logic - macOS Runner
+    uses: ./.github/workflows/build-docker-ecr.yml
+    with:
+      CHECKOUT_GIT_REF: "main"
+      AWS_ACCOUNT_ID: "123456789012"
+      DEPLOYER_ROLE_NAME: "mock-role"
+      AWS_REGION: "us-east-1"
+      ECR_REPOSITORY: "my-repo"
+      DOCKER_TAG_1: "v1.0.0"
+      DOCKER_TAG_2: ""  # Brak drugiego tagu
+      DOCKER_LATEST_TAG: "latest"
+      RUNNER_LABEL_ARRAY_STRING: '["macos-latest"]'  # macOS runner
     secrets:
       DOCKER_BUILD_ARGS_ENCRYPTED: ""  # Brak DOCKER_BUILD_ARGS_ENCRYPTED
