@@ -16,10 +16,10 @@ jobs:
       AWS_ACCOUNT_ID: "123456789012"
       DEPLOYER_ROLE_NAME: "mock-role"
       AWS_REGION: "us-east-1"
-      ECR_REPOSITORY: ""  
+      ECR_REPOSITORY: ""  # No ECR repository provided
       DOCKER_TAG_1: "v1.0.0"
-      DOCKER_TAG_2: ""  # Brak drugiego tagu
+      DOCKER_TAG_2: ""  # No second tag
       DOCKER_LATEST_TAG: "latest"
       RUNNER_LABEL_ARRAY_STRING: '["ubuntu-latest"]'
     secrets:
-      DOCKER_BUILD_ARGS_ENCRYPTED: ""  # Brak DOCKER_BUILD_ARGS_ENCRYPTED
+      DOCKER_BUILD_ARGS_ENCRYPTED: ""  # No encrypted build args
