@@ -1,4 +1,5 @@
 name: Build docker ECR (Test Version)
+
 on:
   workflow_call:
     inputs:
@@ -78,7 +79,7 @@ jobs:
 
       - name: Before build (simulated)
         if: ${{ inputs.BEFORE_BUILD_CMD != '' }}
-        run: echo "Simulating before build command ${{ inputs.BEFORE_BUILD_CMD }}."
+        run: echo "Simulating before build command: ${{ inputs.BEFORE_BUILD_CMD }}."
 
       - name: Remove slash from DOCKER_TAG_1 and trim to 128 characters
         id: tag_trim1
@@ -100,7 +101,7 @@ jobs:
           DOCKER_ARGS: ${{ inputs.DOCKER_BUILD_ARGS }} ${{ secrets.DOCKER_BUILD_ARGS_ENCRYPTED }}
         run: |
           echo "Simulating docker build with args: $DOCKER_ARGS"
-          echo "Building image with tag: local_image"
+          echo "Building image with tag: local_image (simulated)"
         working-directory: .
 
       - name: Simulate Docker image tag & push to ECR (DOCKER_TAG_1 & latest)
@@ -109,8 +110,10 @@ jobs:
           ECR_IMAGE_URI_TAG_1: ${{ env.ECR_REGISTRY }}/${{ inputs.ECR_REPOSITORY }}:${{ env.DOCKER_TAG_1_TRIMMED }}
           ECR_IMAGE_URI_TAG_LATEST: ${{ env.ECR_REGISTRY }}/${{ inputs.ECR_REPOSITORY }}:${{ inputs.DOCKER_LATEST_TAG }}
         run: |
-          echo "Simulating docker tag for $ECR_IMAGE_URI_TAG_1 and $ECR_IMAGE_URI_TAG_LATEST"
-          echo "Simulating docker push for $ECR_IMAGE_URI_TAG_1 and $ECR_IMAGE_URI_TAG_LATEST"
+          echo "Simulating docker tag for $ECR_IMAGE_URI_TAG_1"
+          echo "Simulating docker push for $ECR_IMAGE_URI_TAG_1"
+          echo "Simulating docker tag for $ECR_IMAGE_URI_TAG_LATEST"
+          echo "Simulating docker push for $ECR_IMAGE_URI_TAG_LATEST"
 
       - name: Simulate Docker image tag & push to ECR (DOCKER_TAG_2)
         if: ${{ inputs.ECR_REPOSITORY && inputs.DOCKER_TAG_2 }}
@@ -118,4 +121,4 @@ jobs:
           ECR_IMAGE_URI_TAG_2: ${{ env.ECR_REGISTRY }}/${{ inputs.ECR_REPOSITORY }}:${{ env.DOCKER_TAG_2_TRIMMED }}
         run: |
           echo "Simulating docker tag for $ECR_IMAGE_URI_TAG_2"
-          echo "Simulating docker push for $ECR_IMAGE_URI_TAG_2"name: Build docker ECR (Test Version)
+          echo "Simulating docker push for $ECR_IMAGE_URI_TAG_2"
