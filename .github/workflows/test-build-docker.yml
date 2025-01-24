@@ -1,4 +1,4 @@
-name: Test Build Docker ECR Logic - No ECR_REPOSITORY
+name: Test - No ECR_REPOSITORY
 
 on:
   workflow_dispatch:
@@ -8,18 +8,18 @@ permissions:
   id-token: write
 
 jobs:
-  test_logic:
-    name: Test Build Logic - No ECR_REPOSITORY
+  test_no_ecr_repository:
+    name: Test - No ECR_REPOSITORY
     uses: ./.github/workflows/build-docker-ecr.yml
     with:
       CHECKOUT_GIT_REF: "main"
       AWS_ACCOUNT_ID: "123456789012"
       DEPLOYER_ROLE_NAME: "mock-role"
       AWS_REGION: "us-east-1"
-      ECR_REPOSITORY: ""  # No ECR repository provided
+      ECR_REPOSITORY: ""  # Brak repozytorium ECR
       DOCKER_TAG_1: "v1.0.0"
-      DOCKER_TAG_2: ""  # No second tag
+      DOCKER_TAG_2: ""  # Brak drugiego tagu
       DOCKER_LATEST_TAG: "latest"
       RUNNER_LABEL_ARRAY_STRING: '["ubuntu-latest"]'
     secrets:
-      DOCKER_BUILD_ARGS_ENCRYPTED: ""  # No encrypted build args
+      DOCKER_BUILD_ARGS_ENCRYPTED: ""  # Brak zaszyfrowanych argumentów
