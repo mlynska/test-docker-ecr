@@ -1,4 +1,4 @@
-name: Test - No ECR_REPOSITORY
+name: Test - With ECR_REPOSITORY
 
 on:
   workflow_dispatch:
@@ -8,17 +8,17 @@ permissions:
   id-token: write
 
 jobs:
-  test_no_ecr_repository:
-    name: Test - No ECR_REPOSITORY
+  test_with_ecr_repository:
+    name: Test - With ECR_REPOSITORY
     uses: ./.github/workflows/build-docker-ecr.yml
     with:
       CHECKOUT_GIT_REF: "main"
       AWS_ACCOUNT_ID: "123456789012"
       DEPLOYER_ROLE_NAME: "mock-role"
       AWS_REGION: "us-east-1"
-      ECR_REPOSITORY: ""  # Brak repozytorium ECR
+      ECR_REPOSITORY: "test-repo"  # Podane repozytorium ECR
       DOCKER_TAG_1: "v1.0.0"
-      DOCKER_TAG_2: ""  # Brak drugiego tagu
+      DOCKER_TAG_2: "v1.0.1"  # Drugi tag
       DOCKER_LATEST_TAG: "latest"
       RUNNER_LABEL_ARRAY_STRING: '["ubuntu-latest"]'
     secrets:
