@@ -70,30 +70,29 @@ jobs:
           ref: ${{ inputs.CHECKOUT_GIT_REF }}
 
       - name: Simulate AWS Login
-        if: ${{ inputs.ECR_REPOSITORY }}
+        if: ${{ inputs.ECR_REPOSITORY != '' }}
         run: echo "Simulating AWS login for testing."
 
       - name: Simulate ECR Login
-        if: ${{ inputs.ECR_REPOSITORY }}
+        if: ${{ inputs.ECR_REPOSITORY != '' }}
         run: echo "Simulating ECR login for repository ${{ inputs.ECR_REPOSITORY }}."
 
       - name: Before build (simulated)
         if: ${{ inputs.BEFORE_BUILD_CMD != '' }}
-        run: 
-          echo "Simulating before build command ${{ inputs.BEFORE_BUILD_CMD }}."
+        run: echo "Simulating before build command: ${{ inputs.BEFORE_BUILD_CMD }}."
 
       - name: Remove slash from DOCKER_TAG_1 and trim to 128 characters
         id: tag_trim1
         run: |
-          DOCKER_TAG_1_NO_SLASH=$(echo ${{ inputs.DOCKER_TAG_1 }} | sed 's#/#-#g')
+          DOCKER_TAG_1_NO_SLASH=$(echo "${{ inputs.DOCKER_TAG_1 }}" | sed 's#/#-#g')
           DOCKER_TAG_1_TRIMMED="${DOCKER_TAG_1_NO_SLASH:0:127}"
           echo "DOCKER_TAG_1_TRIMMED=${DOCKER_TAG_1_TRIMMED}" >> $GITHUB_ENV
 
       - name: Remove slash from DOCKER_TAG_2 and trim to 128 characters
         id: tag_trim2
-        if: ${{ inputs.DOCKER_TAG_2 }}
+        if: ${{ inputs.DOCKER_TAG_2 != '' }}
         run: |
-          DOCKER_TAG_2_NO_SLASH=$(echo ${{ inputs.DOCKER_TAG_2 }} | sed 's#/#-#g')
+          DOCKER_TAG_2_NO_SLASH=$(echo "${{ inputs.DOCKER_TAG_2 }}" | sed 's#/#-#g')
           DOCKER_TAG_2_TRIMMED="${DOCKER_TAG_2_NO_SLASH:0:127}"
           echo "DOCKER_TAG_2_TRIMMED=${DOCKER_TAG_2_TRIMMED}" >> $GITHUB_ENV
 
@@ -106,7 +105,7 @@ jobs:
         working-directory: .
 
       - name: Simulate Docker image tag & push to ECR (DOCKER_TAG_1 & latest)
-        if: ${{ inputs.ECR_REPOSITORY }}
+        if: ${{ inputs.ECR_REPOSITORY != '' }}
         env:
           ECR_IMAGE_URI_TAG_1: ${{ env.ECR_REGISTRY }}/${{ inputs.ECR_REPOSITORY }}:${{ env.DOCKER_TAG_1_TRIMMED }}
           ECR_IMAGE_URI_TAG_LATEST: ${{ env.ECR_REGISTRY }}/${{ inputs.ECR_REPOSITORY }}:${{ inputs.DOCKER_LATEST_TAG }}
@@ -117,7 +116,7 @@ jobs:
           echo "Simulating docker push for $ECR_IMAGE_URI_TAG_LATEST"
 
       - name: Simulate Docker image tag & push to ECR (DOCKER_TAG_2)
-        if: ${{ inputs.ECR_REPOSITORY && inputs.DOCKER_TAG_2 }}
+        if: ${{ inputs.ECR_REPOSITORY != '' && inputs.DOCKER_TAG_2 != '' }}
         env:
           ECR_IMAGE_URI_TAG_2: ${{ env.ECR_REGISTRY }}/${{ inputs.ECR_REPOSITORY }}:${{ env.DOCKER_TAG_2_TRIMMED }}
         run: |
