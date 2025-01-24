@@ -79,7 +79,7 @@ jobs:
 
       - name: Before build (simulated)
         if: ${{ inputs.BEFORE_BUILD_CMD != '' }}
-        run: echo "Simulating before build command: ${{ inputs.BEFORE_BUILD_CMD }}."
+        run: echo "Simulating before build command ${{ inputs.BEFORE_BUILD_CMD }}."
 
       - name: Remove slash from DOCKER_TAG_1 and trim to 128 characters
         id: tag_trim1
