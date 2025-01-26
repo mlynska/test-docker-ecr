@@ -1,4 +1,4 @@
-name: Test - With ECR_REPOSITORY
+name: Test - With BEFORE_BUILD_CMD
 
 on:
   workflow_dispatch:
@@ -8,8 +8,8 @@ permissions:
   id-token: write
 
 jobs:
-  test_with_ecr_repository:
-    name: Test - With ECR_REPOSITORY
+  test_with_before_build_cmd:
+    name: Test - With BEFORE_BUILD_CMD
     uses: ./.github/workflows/build-docker-ecr.yml
     with:
       CHECKOUT_GIT_REF: "main"
@@ -18,8 +18,9 @@ jobs:
       AWS_REGION: "us-east-1"
       ECR_REPOSITORY: "test-repo"  # Podane repozytorium ECR
       DOCKER_TAG_1: "v1.0.0"
-      DOCKER_TAG_2: "v1.0.1"  # Drugi tag
+      DOCKER_TAG_2: ""  # Brak drugiego tagu
       DOCKER_LATEST_TAG: "latest"
+      BEFORE_BUILD_CMD: "echo 'Przed budowaniem'"  # Przed-buildowa komenda
       RUNNER_LABEL_ARRAY_STRING: '["ubuntu-latest"]'
     secrets:
       DOCKER_BUILD_ARGS_ENCRYPTED: ""  # Brak zaszyfrowanych argumentów
